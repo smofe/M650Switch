@@ -1,5 +1,7 @@
 #!/bin/zsh
 # Builds M650Switch.app and installs it to ~/Applications.
+#   ./build.sh            native build, installed to ~/Applications
+#   ./build.sh --release  universal build in ./build, not installed
 #
 # The app is signed with a self-signed certificate that is created once in your
 # login keychain. A stable signature lets macOS keep the Bluetooth and
@@ -40,12 +42,25 @@ EOF
 echo "Compiling…"
 rm -rf build
 mkdir -p "$APP/Contents/MacOS"
-swiftc -O -parse-as-library -o "$APP/Contents/MacOS/M650Switch" Sources/*.swift
+if [[ "${1:-}" == "--release" ]]; then
+  # Universal binary (Apple silicon + Intel) for distribution.
+  for arch in arm64 x86_64; do
+    swiftc -O -parse-as-library -target "$arch-apple-macos14.0" -o "build/M650Switch-$arch" Sources/*.swift
+  done
+  lipo -create build/M650Switch-arm64 build/M650Switch-x86_64 -output "$APP/Contents/MacOS/M650Switch"
+else
+  swiftc -O -parse-as-library -o "$APP/Contents/MacOS/M650Switch" Sources/*.swift
+fi
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 
 security find-certificate -c "$IDENTITY" >/dev/null 2>&1 || create_signing_identity
 HASH=$(security find-certificate -c "$IDENTITY" -Z | awk '/SHA-1/ { print $3 }')
 codesign --force --sign "$HASH" "$APP"
+
+if [[ "${1:-}" == "--release" ]]; then
+  echo "Built $APP (not installed)"
+  exit 0
+fi
 
 echo "Installing to ~/Applications…"
 pkill -x M650Switch 2>/dev/null && sleep 1 || true

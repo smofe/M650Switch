@@ -62,12 +62,30 @@ It also needs **Bluetooth** access, to see and connect to the mouse.
 
 - macOS 14 Sonoma or later (developed and tested on macOS 26)
 - macOS system language set to **English** (cleanup and the prompt are matched by their English button titles)
-- Xcode or the Command Line Tools (`xcode-select --install`) to build
+- Xcode or the Command Line Tools only if you build from source
 - A Logitech Signature M650 (or M650 L); other single-host BLE devices can be configured, see below
 
 ## Setup
 
-Do this on **both** Macs:
+Do this on **both** Macs.
+
+### Install
+
+**One-liner** (installs the latest release into `~/Applications` and starts it;
+run it again to update):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/smofe/M650Switch/main/install.sh | sh
+```
+
+**Or manually:** download `M650Switch.zip` from the
+[latest release](https://github.com/smofe/M650Switch/releases/latest), unzip it
+and move `M650Switch.app` to Applications. The app is not notarized by Apple,
+so the first launch is blocked: open System Settings → Privacy & Security and
+click **Open Anyway**. (The one-liner avoids this, because files fetched with
+`curl` are not flagged as downloaded.)
+
+**Or build it yourself** (needs Xcode or `xcode-select --install`):
 
 ```sh
 git clone https://github.com/smofe/M650Switch.git
@@ -76,18 +94,17 @@ cd M650Switch
 open ~/Applications/M650Switch.app
 ```
 
-Then:
+`build.sh` creates a self-signed certificate called "M650Switch Local Signing"
+in your login keychain on first run and signs the app with it. Its only
+purpose is a stable code signature, so macOS keeps your permission grants when
+you rebuild. It can be deleted in Keychain Access at any time.
+
+### First launch
 
 1. Allow **Bluetooth** access when asked.
 2. Grant **Accessibility** access: System Settings → Privacy & Security →
    Accessibility → enable *M650Switch* (the menu bar panel has a shortcut).
 3. Tick **Open at login** in the panel.
-
-**About signing:** `build.sh` creates a self-signed certificate called
-"M650Switch Local Signing" in your login keychain on first run and signs the
-app with it. Its only purpose is a stable code signature, so macOS keeps your
-permission grants when you rebuild. It is not trusted for anything else and
-can be deleted in Keychain Access at any time.
 
 ## Usage
 
@@ -136,7 +153,9 @@ Sources/
   AX.swift              small Accessibility helpers
   Config.swift          device constants, logging
 Resources/Info.plist
-build.sh                build, sign and install
+build.sh                build, sign and install (`--release` for a universal build)
+release.sh              publish a GitHub release with the prebuilt app
+install.sh              one-line installer used in the README
 ```
 
 ## License
